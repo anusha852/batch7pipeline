@@ -1,0 +1,73 @@
+pipeline{
+    agent{label 'node1'}
+    tools{maven 'mvn3.0.5'}
+    stages{
+        stage('Pipeline job'){
+            steps{
+                echo "welcome to jenkins pipeline job"
+            }
+        }
+        stage('Checkout'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], gitTool: 'Default', userRemoteConfigs: [[credentialsId: 'GIT_HUB', url: 'https://gitlab.com/4reysn/mvn-b7.git']]])
+            }
+        }
+        stage('Build'){
+            steps{
+                sh 'mvn package -f pom.xml'
+            }
+        }
+        stage('dev env deployment'){
+            steps{
+                deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: '', url: 'http://35.193.36.39:8090/')], contextPath: null, war: 'target/batch7.war'
+            }
+        }
+        stage('approvals to stage deployment'){
+            steps{
+                echo "Taking approval from Manager to deploy war iin STAGE env "
+                timeout(time: 7, unit: 'DAYS') {
+                input message: 'Do you want to deploy  wars in stage env?', submitter: 'anusha'
+            }
+        }
+         }
+         stage('stage env deployment'){
+             steps{
+                 deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: '', url: 'http://35.193.36.39:8090/')], contextPath: null, war: 'target/batch7.war'
+             }
+         }
+          stage('Approvals to PRE-PROD deployment'){
+           steps{
+                echo "Taking approval from Manager to deploy war in PRE-PROD env "
+                timeout(time: 7, unit: 'DAYS') {
+                input message: 'Do you want to deploy  wars in stage env?', submitter: 'anusha'
+            }
+
+           }
+       }
+          stage('PRE-PROD Deployment'){
+           steps{
+                  deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: '', url: 'http://35.193.36.39:8090/')], contextPath: null, war: 'target/batch7.war'
+           }
+          }
+           stage('Approvals to NEXUS REPO'){
+           steps{
+                echo "Taking approval from Manager to deploy war to NEXUS REPO "
+                timeout(time: 7, unit: 'DAYS') {
+                input message: 'Do you want to deploy  wars in stage env?', submitter: 'anusha'
+            }
+
+           }
+       }
+       stage('nexus repo'){
+           steps{
+               nexusArtifactUploader artifacts: [[artifactId: 'batch7', classifier: '', file: 'target/batch7.war', type: 'war']], credentialsId: 'nexus', groupId: 'com.tcs', nexusUrl: '35.193.36.39:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'batch7', version: '1.0-SNAPSHOT'
+           }
+       }
+        stage('Pipeline msg'){
+           steps{
+               echo " PIPleine job completed "
+           }
+       }
+ }
+}
+
