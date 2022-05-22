@@ -1,12 +1,12 @@
 pipeline{
     agent{label 'node1'}
-    tools{maven 'mvn3.0.5'}
+    tools{maven 'mvn-3.0.5'}
     stages{
         stage('Pipeline job'){
             steps{
                 echo "welcome to jenkins pipeline job"
             }
-        }
+        }-
         stage('Checkout'){
             steps{
                 checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], gitTool: 'Default', userRemoteConfigs: [[credentialsId: 'GIT_HUB', url: 'https://gitlab.com/4reysn/mvn-b7.git']]])
